@@ -86,16 +86,17 @@ app.post("/r/horario", (req, res) => {
 
 app.post("/u/horario/:id", (req, res) => {
     console.log("=====================");
-    console.log("req: " + req);
-   // console.log("req: " + JSON.stringify(req));
-    const { text } = req.body;
+    console.log(req.params);
+    var s = req.params.id;
+    const text  = req.body.text1;
+    const text1  = req.body.dHoraInicial;
 
-    var text1 = { "dHoraInicial": "2018-10-05T14:11:19.790Z" }
-    console.log("text1: " + text1);
+   
+    console.log("text ===: " + text);
     console.log("text1: " + JSON.stringify(text1));
     var u =`http://localhost:3001/u/horario/53467`;
 
-    request({ url: u, method: 'PUT', json: true, body: text1 }, function(request, response, body) {
+    request({ url: u, method: 'PUT', json: true, body: text }, function(request, response, body) {
         /* console.log("request: " + request);
        console.log("response: " + JSON.stringify(response.body));  */
        res.send(JSON.stringify(response.body));
@@ -118,14 +119,6 @@ app.post("/c/paciente", (req, res) => {
 
     request({ url: 'http://localhost:3001/c/paciente', method: 'POST', json: true, body: text1 }, function(request, response, body) {
         
-        /* let json = JSON.parse(body);
-
-        if (json != undefined) {
-            res.send({ mensagem: json });
-        } else {
-            res.send({ mensagem: "erro na query" });
-        } */
-        /* console.log(json); */
     })
 });
 app.listen(port, () => console.log(`Running on port ${port}`));

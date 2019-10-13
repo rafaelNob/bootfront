@@ -7,7 +7,8 @@ let context = {};
 let intent = {};
 let intencao;
 let mensagemBD;
-var calendario = ["10-19-2019", "10-13-2019", "10-30-2019"]
+/* var calendario = ["10-19-2019", "10-13-2019", "10-30-2019"] */
+var calendario = []
 
 /**
  * Monta as div do chat
@@ -39,6 +40,8 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, context, intent }),
     })).json();
+
+   
     context = response.context; // importante para manter o contexto
 
     let autorizaChat = true; // "chave" para bloquei de resposta durante validações
@@ -67,6 +70,7 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
         InsertTemplateInTheChat(template);
         chat.scrollTop = chat.scrollHeight;
         if(response.output.text[item]=='Entendi, para qual data você deseja marcar a consulta?'){
+            pegarHorarioIndisponiveis("");
             document.querySelector('#div_data').classList.toggle('d-none');
              document.querySelector('#textInput').classList.toggle('d-none');
         }
@@ -93,7 +97,7 @@ dateInput.addEventListener('change', (event) => {
     document.getElementById('timepicker').classList.remove('d-none');
     console.log(event);
     //select de dados do banco
-    calendario = ["10-19-2019", "10-13-2019", "10-30-2019"]; //dados do banco (mm-dd-yyyy)
+  //  calendario = ["10-19-2019", "10-13-2019", "10-30-2019"]; //dados do banco (mm-dd-yyyy)
 })
 
 let procuraCPF = async(text) => {
@@ -120,10 +124,11 @@ let procuraCPF = async(text) => {
 };
 
 /*========= CALENDAR JQUERY =========*/
-var disabledDays = calendario;
 
 /* utility functions */
 function nationalDays(date) {
+    var disabledDays  =[]
+        disabledDays  = calendario;
     var m = date.getMonth(),
         d = date.getDate(),
         y = date.getFullYear();
@@ -156,7 +161,7 @@ let pegarHorario = async(text) => {
         body: JSON.stringify({ text }),
     })).json();
     let i = 0;
-updateHora("53467");
+
 response.mensagem. forEach(element => {
         let res = element.dHoraInicial.replace(/T/, ' ').replace(/T/, '').replace(/\d+:\d+.\d+Z/, '');
         let min = element.dHoraInicial.replace(/\d+-\d+-\d+T\d+:/, '').replace(/:\d+.\d+Z/, '');
@@ -175,14 +180,39 @@ response.mensagem. forEach(element => {
 //update horarios
 let updateHora = async(id) => {
     console.log('updateHora');
-    const uri = 'http://localhost:3000/u/horario/'+id;
-    const response = await (await fetch(uri, {
+  
+    const uri = 'http://localhost:3000/u/horario/1234';
+    var text1 = { "dHoraInicial": "2019-10-05" }
+    const response = (await fetch(uri, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(id),
+        body: JSON.stringify({
+            text1
+        }),
     }));
     // })).json();
     console.log('response: '+JSON.stringify(response));
 };
 
-// pegarHorario("");
+let pegarHorarioIndisponiveis = async(text) => {
+    const uri = 'http://localhost:3000/r/horario';
+
+    const response = await (await fetch(uri, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+    })).json();
+    var data = []
+    var dataIndiposniveis =[]
+    for (let i = 0; i < response.mensagem.length; i++) {
+        data[i] =  response.mensagem[i].dHoraInicial.substring(0, 10);
+        var ano =  data[i].slice(0, 4);
+        var mes =  data[i].slice(5, 7);
+        var dia =  data[i].slice(8, 10);
+        dataIndiposniveis[i] = mes+"-"+dia+"-"+ano;
+
+        
+    }
+    calendario = dataIndiposniveis;
+        
+};
