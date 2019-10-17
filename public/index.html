@@ -1,13 +1,16 @@
 <html>
+
 <head>
     <title>Lucca - Assistente de Consultas/Exames</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="stylesheet" href="./style.css">
     <link rel="shortcut icon" type="image/x-icon" href="icon.jpg">
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">
+    <link rel="stylesheet" type="text/css" href="./jquery.datetimepicker.css">
+    <!--  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css"> -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 </head>
+
 <body>
     <div>
         <div id="chat-column" class="chat-column">
@@ -15,23 +18,45 @@
             <label for="textInput" class="inputOutline">
                 <input id="textInput" class="input responsive-column" autofocus placeholder="Digite sua pergunta..." />
                 <div  id="div_data" class="d-none" >
-                    <input placeholder="Selecione a data" readonly=“true” id ="date" style="float: left"  class="input responsive-column textInput" maxlength="10"/>
-                    <input id="timepicker" readonly=“true” name="timepicker" class="input responsive-column textInput d-none"/>
-                    <span style="clear: both"></span>
+                    
                     <button  class="btn btn-success">Gravar</button>
                 </div>
+                
+                <input id="datetimepicker" readonly="true" type="text" class="input responsive-column textInput">
             </label>
         </div>
     </div>
-    <script>
-       
-        // window.onload = function(){ pegarHorario(); }
-    </script>
+    <script src="./jquery.js"></script>
     <script src="./script.js"></script>
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css" />
-    <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
-    <script src="./jquery-ui.js"></script>
+    <script src="./build/jquery.datetimepicker.full.min.js"></script>
+    <script>
+        // DOCUMENTAÇÃO noWeekendsOrHolidays
+        //https://xdsoft.net/jqplugins/datetimepicker/#disabledDates
+        $(document).ready(function() {
+            $.datetimepicker.setLocale('pt-BR');
+            jQuery('#datetimepicker').attr('placeholder', 'Selecione uma data').datetimepicker({
+                format: 'd/m/Y H:i',
+                minDate: 0,
+                maxDate: '2019/11/20', //ANO/MES/DIA
+                validateOnBlur: true,
+                allowTimes: allowTimes,
+                step: 30,
+                /* disabledDates: ['2019/10/21', '2019/10/23'], */
+                disabledDates: disabe,
+                onChangeDateTime: function(dp, $input) {
+
+                    console.log($input.val());
+                }
+
+            });
+
+        });
+    </script>
+    <!--   <script src="http://code.jquery.com/jquery-1.8.2.js"></script> -->
+    <!--  <script src="./jquery-ui.js"></script>
     <script src="./jquery_calendar.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script> -->
 </body>
+
 </html>

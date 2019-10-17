@@ -88,18 +88,18 @@ app.post("/u/horario/:id", (req, res) => {
     console.log("=====================");
     console.log(req.params);
     var s = req.params.id;
-    const text  = req.body.text1;
-    const text1  = req.body.dHoraInicial;
+    const text = req.body.text1;
+    const text1 = req.body.dHoraInicial;
 
-   
+
     console.log("text ===: " + text);
     console.log("text1: " + JSON.stringify(text1));
-    var u =`http://localhost:3001/u/horario/53467`;
+    var u = `http://localhost:3001/u/horario/53467`;
 
     request({ url: u, method: 'PUT', json: true, body: text }, function(request, response, body) {
         /* console.log("request: " + request);
        console.log("response: " + JSON.stringify(response.body));  */
-       res.send(JSON.stringify(response.body));
+        res.send(JSON.stringify(response.body));
     })
     console.log("fINALIZOU");
 });
@@ -118,7 +118,7 @@ app.post("/c/paciente", (req, res) => {
         // res.send({mensagem : "resposta obtida"})
 
     request({ url: 'http://localhost:3001/c/paciente', method: 'POST', json: true, body: text1 }, function(request, response, body) {
-        
+
     })
 });
 app.listen(port, () => console.log(`Running on port ${port}`));
