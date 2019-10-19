@@ -3,7 +3,6 @@ const express = require('express');
 const request = require('request');
 const bodyParser = require('body-parser');
 const app = express();
-const cors = require('cors');
 
 //const conn = require('./public/connection')
 
@@ -16,10 +15,9 @@ const assistant = new AssistantV1({
     version: '2019-02-28',
     iam_apikey: 'tcEJKkSN3_wHgaejqnMMFr3KPiz7COW8UFXC1tQu2Duo', //boot lucca
     url: 'https://gateway.watsonplatform.net/assistant/api' //boot lucca
-        // iam_apikey: 'Ss9p4PBVvy_rJXHo44MzwldtHcIXnpQqn3gB5tU0_wVD',  // pizzaria
-        // url: 'https://gateway.watsonplatform.net/assistant/api'      // pizzaria
 });
-app.use(cors());
+
+
 app.post('/conversation/', (req, res) => {
     const { text, context = {} } = req.body;
     const params = {
@@ -37,25 +35,12 @@ app.post('/conversation/', (req, res) => {
     });
 })
 
-/* app.post("/teste", (req, res) => {
+app.post("/paciente/cpf/", (req, res) => {
     const { text } = req.body;
     console.log("id = " + text);
 
     // res.send({mensagem : "resposta obtida"})
-    request('http://localhost:8081/api/v1/paciente/' + text, function(request, response, body) {
-        let json = JSON.parse(body);
-        res.send({ mensagem: json });
-        console.log(json.cNmPaciente);
-        console.log(json.dNascimento);
-    })
-}); */
-
-app.post("/consulta", (req, res) => {
-    const { text } = req.body;
-    console.log("id = " + text);
-
-    // res.send({mensagem : "resposta obtida"})
-    request('http://localhost:3001/r/paciente/' + text, function(request, response, body) {
+    request('http://localhost:3001/paciente/' + text, function(request, response, body) {
         let json = JSON.parse(body);
 
         if (json != undefined) {
@@ -67,58 +52,82 @@ app.post("/consulta", (req, res) => {
     })
 });
 
-app.post("/r/horario", (req, res) => {
+app.post("/especialidade", (req, res) => {
     const { text } = req.body;
-    console.log("id post= " + text);
+    console.log("id =" + text);
 
-    // res.send({mensagem : "resposta obtida"})
-    request('http://localhost:3001/r/horario/' + text, function(request, response, body) {
+      request('http://localhost:3001/especialidade/' + text, function(request, response, body) {
         let json = JSON.parse(body);
-
         if (json != undefined) {
             res.send({ mensagem: json });
         } else {
             res.send({ mensagem: "erro na query" });
         }
-        console.log(json);
     })
 });
 
-app.post("/u/horario/:id", (req, res) => {
-    console.log("=====================");
-    console.log(req.params);
-    var s = req.params.id;
-    const text = req.body.text1;
-    const text1 = req.body.dHoraInicial;
+app.post("/horarios", (req, res) => {
+    const { text } = req.body;
+    console.log("id =" + text);
 
-
-    console.log("text ===: " + text);
-    console.log("text1: " + JSON.stringify(text1));
-    var u = `http://localhost:3001/u/horario/53467`;
-
-    request({ url: u, method: 'PUT', json: true, body: text }, function(request, response, body) {
-        /* console.log("request: " + request);
-       console.log("response: " + JSON.stringify(response.body));  */
-        res.send(JSON.stringify(response.body));
+      request('http://localhost:3001/horarios/' + text, function(request, response, body) {
+        let json = JSON.parse(body);
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
     })
-    console.log("fINALIZOU");
 });
 
-app.post("/c/paciente", (req, res) => {
+app.post("/tipoConsulta", (req, res) => {
+    const { text } = req.body;
+    console.log("id =" + text);
+
+      request('http://localhost:3001/tipoConsulta/' + text, function(request, response, body) {
+        let json = JSON.parse(body);
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+    })
+});
+
+app.post("/hospital", (req, res) => {
+    const { text } = req.body;
+    console.log("id =" + text);
+      request('http://localhost:3001/hospital/' + text, function(request, response, body) {
+        let json = JSON.parse(body);
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+    })
+});
+
+app.post("/create", (req, res) => {
     const { text } = req.body;
     console.log("struct = " + text);
     var text1 = {
-            "cNaturalidade": "ARGENTINO",
-            "cNmPaciente": "FUNCIONOU",
+            "cNaturalidade": "CHILENO",
+            "cNmPaciente": "Rafael",
             "cRG": "439061027",
             "dCadastro": "2019-09-23 09:24:19",
             "dNascimento": "19970709",
-            "nCPF": 71011420015
+            "nCPF": 3384632807
         }
         // res.send({mensagem : "resposta obtida"})
-
-    request({ url: 'http://localhost:3001/c/paciente', method: 'POST', json: true, body: text1 }, function(request, response, body) {
-
+    request({ url: 'http://localhost:3001/create', method: 'POST', json: true, body: text1 }, function(request, response, body) {
+        let json = JSON.parse(body);
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+        console.log(json);
     })
 });
+
 app.listen(port, () => console.log(`Running on port ${port}`));
