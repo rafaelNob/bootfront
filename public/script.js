@@ -47,6 +47,7 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, context, intent }),
   })).json();
+  
   context = response.context; // importante para manter o contexto
   idEspecialidade = response.context.especialidades;
   objSalvar.especialidade = response.context.especialidades;
@@ -59,7 +60,7 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
         let mens = await procuraCPF(response.context.cpf);
         if (mens === false) {
             autorizaChat = mens;
-            mens = 'Desculpe, para usuários não cadastrados minha única função é tirar dúvidas.';
+            mens = 'CPF nao encontrado na base de dados, para os usuários não cadastrados minha única função é tirar dúvidas.';
         } else {
             mens = mens.split(' ')
             mens = 'Olá, ' + mens[0] + '!';
@@ -127,7 +128,6 @@ textInput.addEventListener('keydown', (event) => {
 
 let procuraCPF = async(text) => {
     const uri = 'http://localhost:3000/paciente/cpf/';
-
     const response = await (await fetch(uri, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,9 +135,9 @@ let procuraCPF = async(text) => {
     })).json();
 
     if (response.mensagem.message === "nada foi encontrado") {
-      var template = ('cpf nao encontrado', 'lucca');
-      InsertTemplateInTheChat(template);
-      chat.scrollTop = chat.scrollHeight;
+      // var template = templateChatMessage('cpf nao encontrado', 'lucca');
+      // InsertTemplateInTheChat(template);
+      // chat.scrollTop = chat.scrollHeight;
       return false;
     } else {
       Object.defineProperty(objSalvarBanco, "nCdPaciente", {
@@ -403,6 +403,7 @@ let changeDateTimePicker = () => {
     objSalvar.ultimaHora = dados[1];
     objSalvar.dHoraInicial = datetimepicker.value;
     objSalvar.nCdHorario = allowTimesCod[allowTimes.indexOf(dados[1])];
+    DocumentTimeline.querySelector('#div_data button').removeAttribute("class");
     console.log('objSalvar');
   }
 }
@@ -417,11 +418,10 @@ let selecionaHorario = () => {
   InsertTemplateInTheChat(template);
 
   // query para gravar no banco
-  //retorno do protocolo
+  gravarDados();
+    //retorno do protocolo
   //resposta com protocolo
-  mens = `Sua consulta foi agendada com sucesso! Seu protocolo é: CONS-${objSalvar.ncdConsulta}.`;
-  template = templateChatMessage(mens, 'lucca');
-  InsertTemplateInTheChat(template);
+  
 
   document.querySelector('#div_data').classList.add('d-none');
   document.querySelector('#textInput').classList.remove('d-none');
@@ -429,3 +429,30 @@ let selecionaHorario = () => {
   textInput.value = '';
   chat.scrollTop = chat.scrollHeight;
 }
+
+///GRAVAR NO BANCO ALELUA AMÉM
+let gravarDados = async() => {
+  const uri = 'http://localhost:3000/gravarDados';
+  //74819
+  let teste = {
+      "nCdHorario": objSalvar.nCdHorario,
+      "nCdPaciente": objSalvar.nCdPaciente,
+      "nCdEspecialidade": objSalvar.nCdEspecialidade
+  }
+
+  const response = await (await fetch(uri, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teste }),
+  })).json();
+
+  objSalvar.ncdConsulta = response.mensagem[0].nCdConsulta;
+  let mens = `Sua consulta foi agendada com sucesso! Seu protocolo é: CONS-${objSalvar.ncdConsulta}.`;
+  let template = templateChatMessage(mens, 'lucca');
+  InsertTemplateInTheChat(template);
+  chat.scrollTop = chat.scrollHeight;
+
+  if (response.mensagem.message === "nada foi encontrado") {
+    return false;
+  } 
+};

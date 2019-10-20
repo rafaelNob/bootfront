@@ -158,4 +158,23 @@ app.post("/r/horarios/horasdisponiveis", (req, res) => {
         console.log(json);
     })
 });
+
+app.post("/gravarDados", (req, res) => {
+    let text  = req.body.teste;
+    console.log("id = " + text);
+    let uri = `http://localhost:3001/CONSULTA`;
+    
+    console.log(uri);
+    request({url :uri, method: 'POST', json: true, body :text},function(request, response, body) {
+        // let json = JSON.parse(body);
+
+        // if (json != undefined) {
+        //     res.send({ mensagem: json });
+        // } else {
+        //     res.send({ mensagem: "erro na query" });
+        // }
+        // console.log(json);
+        res.send({ mensagem: body });
+    })
+});
 app.listen(port, () => console.log(`Running on port ${port}`));
