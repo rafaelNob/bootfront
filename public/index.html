@@ -17,9 +17,9 @@
                 <input id="textInput" class="input responsive-column" autofocus placeholder="Digite sua pergunta..." />
                 <div  id="div_data" class="d-none">
                     <button  class="btn btn-success">Gravar</button>
-                    <input id="datetimepicker" readonly="true" type="text" class="input responsive-column textInput">
                 </div>
             </label>
+            <input id="datetimepicker" readonly="true" type="text" class="input responsive-column textInput"s>
         </div>
     </div>
     <script src="./jquery.js"></script>
@@ -29,22 +29,31 @@
     <script>
         // DOCUMENTAÇÃO noWeekendsOrHolidays
         //https://xdsoft.net/jqplugins/datetimepicker/#disabledDates
-        $(document).ready(function() {
+        function apresentaDatePicker(datasHabilitadas, allowTimes) {
+            let data_futura = new Date();
+            data_futura.setMonth(data_futura.getMonth()+3);
+            let data_limit = data_futura.getFullYear()+'/';
+            data_limit += (data_futura.getMonth() < 8) ? '0'+(data_futura.getMonth()+1) : data_futura.getMonth()+1;
+            data_limit += '/'+data_futura.getDate();
+            console.log("Caiuuuu no jq "+data_limit);
+            
             $.datetimepicker.setLocale('pt-BR');
             jQuery('#datetimepicker').attr('placeholder', 'Selecione uma data').datetimepicker({
                 format: 'd/m/Y H:i',
                 minDate: 0,
-                maxDate: '2019/11/20', //ANO/MES/DIA
+                maxDate: data_limit, //ANO/MES/DIA
                 validateOnBlur: true,
                 allowTimes: allowTimes,
                 step: 30,
                 /* disabledDates: ['2019/10/21', '2019/10/23'], */
-                disabledDates: disabe,
+                // disabledDates: disabledDates,
+                allowDates: datasHabilitadas,
                 onChangeDateTime: function(dp, $input) {
                     console.log($input.val());
+                    console.log(dp);
                 }
             });
-        });
+        }
     </script>
     <!--   <script src="http://code.jquery.com/jquery-1.8.2.js"></script> -->
     <!--  <script src="./jquery-ui.js"></script>

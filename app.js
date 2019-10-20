@@ -53,9 +53,9 @@ app.post("/paciente/cpf/", (req, res) => {
 });
 
 app.post("/especialidade", (req, res) => {
-    const { text } = req.body;
+    let { text } = req.body;
     console.log("id =" + text);
-
+    text = text.replace('/', '-');
       request('http://localhost:3001/especialidade/' + text, function(request, response, body) {
         let json = JSON.parse(body);
         if (json != undefined) {
@@ -67,16 +67,9 @@ app.post("/especialidade", (req, res) => {
 });
 
 app.post("/horarios", (req, res) => {
-    const { text } = req.body;
+    const { text } = req.body.text;
     console.log("id =" + text);
-
-      request('http://localhost:3001/horarios/' + text, function(request, response, body) {
-        let json = JSON.parse(body);
-        if (json != undefined) {
-            res.send({ mensagem: json });
-        } else {
-            res.send({ mensagem: "erro na query" });
-        }
+      request('http://localhost:3001/horarios', function(request, response, body) {
     })
 });
 
@@ -121,6 +114,24 @@ app.post("/create", (req, res) => {
         // res.send({mensagem : "resposta obtida"})
     request({ url: 'http://localhost:3001/create', method: 'POST', json: true, body: text1 }, function(request, response, body) {
         let json = JSON.parse(body);
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+        console.log(json);
+    })
+});
+
+//RETORNA POR DATAS DISPONIVEIS
+app.post("/r/horarios/datas-disponiveis", (req, res) => {
+    const { text } = req.body;
+    console.log("id = " + text);
+    let uri = `http://localhost:3001/r/horarios/datasdisponiveis/${text.espe}/${text.hosp}`;
+    // res.send({mensagem : "resposta obtida"})
+    request({url :uri,  method: 'GET'  },function(request, response, body) {
+        let json = JSON.parse(body);
+
         if (json != undefined) {
             res.send({ mensagem: json });
         } else {
