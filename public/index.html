@@ -10,16 +10,18 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 </head>
 <body>
+        94007420025
     <div>
         <div id="chat-column" class="chat-column">
             <div id="chat"></div>
             <label for="textInput" class="inputOutline">
                 <input id="textInput" class="input responsive-column" autofocus placeholder="Digite sua pergunta..." />
                 <div  id="div_data" class="d-none">
-                    <button  class="btn btn-success">Gravar</button>
+                    <input id="datetimepicker" readonly="true" type="text" 
+                    class="input responsive-column textInput text-center" placeholder="Selecione uma data" />
+                    <button  class="btn btn-success btn-block" onclick="selecionaHorario()">Confirmar Horário</button>
                 </div>
             </label>
-            <input id="datetimepicker" readonly="true" type="text" class="input responsive-column textInput"s>
         </div>
     </div>
     <script src="./jquery.js"></script>
@@ -28,8 +30,8 @@
     <script src="./build/jquery.datetimepicker.full.min.js"></script>
     <script>
         // DOCUMENTAÇÃO noWeekendsOrHolidays
-        //https://xdsoft.net/jqplugins/datetimepicker/#disabledDates
-        function apresentaDatePicker(datasHabilitadas, allowTimes) {
+        //https://xdsoft.net/jqplugins/datetimepicker/
+        function apresentaDatePicker(datasHabilitadas=[], allowTimes=[]) {
             let data_futura = new Date();
             data_futura.setMonth(data_futura.getMonth()+3);
             let data_limit = data_futura.getFullYear()+'/';
@@ -38,8 +40,9 @@
             console.log("Caiuuuu no jq "+data_limit);
             
             $.datetimepicker.setLocale('pt-BR');
-            jQuery('#datetimepicker').attr('placeholder', 'Selecione uma data').datetimepicker({
-                format: 'd/m/Y H:i',
+            jQuery('#datetimepicker').datetimepicker({
+                format: (allowTimes.length==0 ? 'd/m/Y' : 'd/m/Y H:i'),
+                timepicker: (allowTimes.length==0 ? false : true),
                 minDate: 0,
                 maxDate: data_limit, //ANO/MES/DIA
                 validateOnBlur: true,
@@ -48,9 +51,8 @@
                 /* disabledDates: ['2019/10/21', '2019/10/23'], */
                 // disabledDates: disabledDates,
                 allowDates: datasHabilitadas,
-                onChangeDateTime: function(dp, $input) {
-                    console.log($input.val());
-                    console.log(dp);
+                onChangeDateTime: function() {
+                    changeDateTimePicker();
                 }
             });
         }

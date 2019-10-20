@@ -2,10 +2,11 @@ const textInput = document.getElementById('textInput');
 const datetimepicker = document.getElementById('datetimepicker');
 const chat = document.getElementById('chat');
 const objScrDiv = document.getElementById("chat-column");
-var allowTimes = [] //['10:00', '12:00', '13:00', '15:00', '17:00', '17:05', '17:20', '19:00', '20:00']
 var datasHabilitadas = []; //['2019-10-20'];
+var allowTimes = []; //['10:00', '12:00', '13:00', '15:00', '17:00', '17:05', '17:20', '19:00', '20:00']
+var allowTimesCod = [];
 /* var dateInput = document.getElementById('date'); */
-let objSalvarBanco = {}
+let objSalvarBanco = {};
 let paramcDecricao = 1; //OK
 let	paramCodHorarios = undefined; //OK
 let	paramnCdTpConsulta = 1;
@@ -48,7 +49,8 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
   })).json();
   context = response.context; // importante para manter o contexto
   idEspecialidade = response.context.especialidades;
-  idHospital = response.context.unidades;
+  objSalvar.especialidade = response.context.especialidades;
+  objSalvar.hospital = response.context.unidades;
   
   let autorizaChat = true; // "chave" para bloquei de resposta durante validações
   let acao = response.context.acao; // acao solicitada
@@ -69,18 +71,21 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
       }
       else if (acao == 'verificarData' && response.context.data != undefined) {}
 
-  if(idEspecialidade != undefined){
-    objSalvar.especialidade = await retornaEspecialidade(idEspecialidade);
-    console.log("codigo da especialidade: " + objSalvar.especialidade);
+  if(objSalvar.especialidade != undefined){
+    objSalvar.nCdEspecialidade = await retornaEspecialidade(objSalvar.especialidade);
+    console.log("codigo da especialidade: " + objSalvar.nCdEspecialidade);
   }
-  if (idHospital != undefined) {
-    objSalvar.hospital = await retornaHospital(idHospital);
-    paramCodHospital = objSalvar.hospital;
+  if (objSalvar.hospital != undefined) {
+    objSalvar.nCdHospital = await retornaHospital(objSalvar.hospital);
+    paramCodHospital = objSalvar.nCdHospital;
     console.log('testando o codigo do hospital: ' + paramCodHospital);
     paramCodHorarios = '53467';
-    
-    let objEsp = {espe : objSalvar.especialidade, hosp: objSalvar.hospital};
+  }
+  if (objSalvar.hospital != undefined && objSalvar.especialidade != undefined) {
+    let objEsp = {espe : objSalvar.nCdEspecialidade, hosp: objSalvar.nCdHospital};
     retornaDatasDisponiveis(objEsp);
+    document.querySelector('#div_data').classList.remove('d-none');
+    document.querySelector('#textInput').classList.add('d-none');
   }
   if(paramCodHorarios != undefined){
     let consultahorarios = await retornaHorarios(paramCodHorarios);
@@ -94,11 +99,6 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
       const template = templateChatMessage(response.output.text[item], 'lucca');
       InsertTemplateInTheChat(template);
       chat.scrollTop = chat.scrollHeight;
-      if(response.output.text[item]=='Entendi, para qual data você deseja marcar a consulta?'){
-        document.querySelector('#div_data').classList.remove('d-none');
-        document.querySelector('#textInput, .xdsoft_timepicker.active').classList.add('d-none');
-        console.log('d-none');
-      }
     }
 };
 /**
@@ -146,12 +146,12 @@ let procuraCPF = async(text) => {
         enumerable: true
       });
 
-      objSalvarBanco.nCdPaciente =  response.mensagem.nCdPaciente;
-      console.log('parametro id de usuário do cpf: ' + objSalvarBanco.nCdPaciente);
+      objSalvar.nCdPaciente =  response.mensagem.nCdPaciente;
+      console.log('parametro id de usuário do cpf: ' + objSalvar.nCdPaciente);
       
-      var template = templateChatMessage('cpf encontrado', 'lucca');
-      InsertTemplateInTheChat(template);
-      chat.scrollTop = chat.scrollHeight;
+      // var template = templateChatMessage('cpf encontrado', 'lucca');
+      // InsertTemplateInTheChat(template);
+      // chat.scrollTop = chat.scrollHeight;
       return response.mensagem.cNmPaciente;
     }
 };
@@ -172,9 +172,9 @@ let retornaEspecialidade = async(text) => {
       chat.scrollTop = chat.scrollHeight;
       return false;
     } else {
-      var template = templateChatMessage('especialidade encontrado', 'lucca');
-      InsertTemplateInTheChat(template);
-      chat.scrollTop = chat.scrollHeight;
+      // var template = templateChatMessage('especialidade encontrado', 'lucca');
+      // InsertTemplateInTheChat(template);
+      // chat.scrollTop = chat.scrollHeight;
       return response.mensagem.nCdEspecialidade;
     }
 };
@@ -200,9 +200,9 @@ let retornaHospital = async(text) => {
           enumerable: true
         });
         objSalvarBanco.nCdHospital = response.mensagem.nCdHospital;
-        var template = templateChatMessage('hospital encontrado', 'lucca');
-        InsertTemplateInTheChat(template);
-        chat.scrollTop = chat.scrollHeight;
+        // var template = templateChatMessage('hospital encontrado', 'lucca');
+        // InsertTemplateInTheChat(template);
+        // chat.scrollTop = chat.scrollHeight;
         return response.mensagem.nCdHospital;
       }
   };
@@ -347,33 +347,85 @@ let retornaDatasDisponiveis = async(text) => {
       body: JSON.stringify({ text }),
   })).json();
 
-  if (response.mensagem.message === "nada foi encontrado") {
-    // var template = ('cpf nao encontrado', 'lucca');
-    // InsertTemplateInTheChat(template);
-    // chat.scrollTop = chat.scrollHeight;
-    return false;
-  } else {
+  if (response.mensagem.message === "nada foi encontrado") { return false; }
+  else {
     for (let index = 0; index < response.mensagem.length; index++) {
-      // const element = array[index];
-      // console.log(response.mensagem[index].cDATAFORMATADA);´
-      let aux = response.mensagem[index].cDATAFORMATADA.split('/');
+      let aux = response.mensagem[index].DATA.split('/');
       aux[3] = aux[2] +'/'+ aux[1] +'/'+ aux[0];
       datasHabilitadas[index] = aux[3];
     }
-    apresentaDatePicker(datasHabilitadas, []);
-    let template = templateChatMessage('retornando Datas Disponiveis', 'lucca');
+    apresentaDatePicker(datasHabilitadas);
+    document.querySelector('.xdsoft_datetimepicker').style.width = "auto";
+    let template = templateChatMessage('Retornando datas disponiveis...', 'lucca');
     InsertTemplateInTheChat(template);
     chat.scrollTop = chat.scrollHeight;
-    return response.mensagem.cNmPaciente;
+    let aux = datasHabilitadas[0].split('/');
+    datetimepicker.value = aux[2]+'/'+aux[1]+'/'+aux[0];
+    changeDateTimePicker(); 
   }
 };
 
-datetimepicker.addEventListener("change", (data='01/01/2001') => {
-  alert('resgatar horarios: '+data);
-  console.log('resgatar horarios: '+data);
-  //pega array horarios
-  //foreach no resultado
-  //hora.replace(/(\d+:\d+)(?=:)/, '\1');
-  //chama funcao do datepicker passando, alem das datas, um novo parametro(allowHorarios)
-  //
-});
+let retornaHorasDisponiveis = async(text) => {
+  const uri = 'http://localhost:3000/r/horarios/horasdisponiveis';
+
+  const response = await (await fetch(uri, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+  })).json();
+
+  if (response.mensagem.message === "nada foi encontrado") {
+    return false;
+  } else {
+    allowTimes=[];
+    allowTimesCod=[];
+    for (let index = 0; index < response.mensagem.length; index++) {
+      allowTimes[index] = response.mensagem[index].HORA_INICIAL.replace(/(?<=\d+:\d+):\d+/, '');
+      allowTimesCod[index] = response.mensagem[index].nCdHorario;
+    }
+    apresentaDatePicker(datasHabilitadas, allowTimes);
+  }
+};
+
+let changeDateTimePicker = () => {
+  console.log('datetimepicker.value: ' + datetimepicker.value);
+  let dados = datetimepicker.value.split(' ');
+  //retorna horarios ao mudar dia
+  if(objSalvar.ultimaData!==dados[0]){
+    let aux = dados[0].split('/');
+    objSalvar.ultimaData = dados[0];
+    objSalvar.data = aux[2]+aux[1]+aux[0];
+    retornaHorasDisponiveis(objSalvar);
+  }
+  //"grava" horario
+  else if(objSalvar.ultimaHora !== dados[1]){
+    if(!allowTimes.includes(dados[1])){ delete objSalvar.horario; return false; }
+    objSalvar.ultimaHora = dados[1];
+    objSalvar.dHoraInicial = datetimepicker.value;
+    objSalvar.nCdHorario = allowTimesCod[allowTimes.indexOf(dados[1])];
+    console.log('objSalvar');
+  }
+}
+
+let selecionaHorario = () => {
+  let template = templateChatMessage(`${datetimepicker.value}`, 'user');
+  InsertTemplateInTheChat(template);
+
+  let dados = datetimepicker.value.split(' ');
+  let mens = `Confirmado, agendando sua consulta para o dia ${dados[0]} às ${dados[1]} no ${objSalvar.hospital}.`;
+  template = templateChatMessage(mens, 'lucca');
+  InsertTemplateInTheChat(template);
+
+  // query para gravar no banco
+  //retorno do protocolo
+  //resposta com protocolo
+  mens = `Sua consulta foi agendada com sucesso! Seu protocolo é: CONS-${objSalvar.ncdConsulta}.`;
+  template = templateChatMessage(mens, 'lucca');
+  InsertTemplateInTheChat(template);
+
+  document.querySelector('#div_data').classList.add('d-none');
+  document.querySelector('#textInput').classList.remove('d-none');
+
+  textInput.value = '';
+  chat.scrollTop = chat.scrollHeight;
+}

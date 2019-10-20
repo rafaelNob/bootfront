@@ -17,7 +17,6 @@ const assistant = new AssistantV1({
     url: 'https://gateway.watsonplatform.net/assistant/api' //boot lucca
 });
 
-
 app.post('/conversation/', (req, res) => {
     const { text, context = {} } = req.body;
     const params = {
@@ -123,7 +122,7 @@ app.post("/create", (req, res) => {
     })
 });
 
-//RETORNA POR DATAS DISPONIVEIS
+//RETORNA DATAS DISPONIVEIS
 app.post("/r/horarios/datas-disponiveis", (req, res) => {
     const { text } = req.body;
     console.log("id = " + text);
@@ -141,4 +140,22 @@ app.post("/r/horarios/datas-disponiveis", (req, res) => {
     })
 });
 
+//RETORNA HORAS POR DATAS DISPONIVEIS
+app.post("/r/horarios/horasdisponiveis", (req, res) => {
+    const { text } = req.body;
+    console.log("id = " + text);
+    let uri = `http://localhost:3001/r/horarios/horasdisponiveis/${text.nCdEspecialidade}/${text.nCdHospital}/${text.data}`;
+    
+    console.log(uri);
+    request({url :uri,  method: 'GET'  },function(request, response, body) {
+        let json = JSON.parse(body);
+
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+        console.log(json);
+    })
+});
 app.listen(port, () => console.log(`Running on port ${port}`));
