@@ -160,7 +160,7 @@ app.post("/r/horarios/horasdisponiveis", (req, res) => {
 });
 
 app.post("/gravarDados", (req, res) => {
-    let text  = req.body.teste;
+    let text  = req.body.gravar;
     console.log("id = " + text);
     let uri = `http://localhost:3001/CONSULTA`;
     
@@ -177,4 +177,88 @@ app.post("/gravarDados", (req, res) => {
         res.send({ mensagem: body });
     })
 });
+
+/**
+ * DADOS EXAME
+ */
+
+
+app.post("/exame", (req, res) => {
+    let { text } = req.body;
+    console.log("id =" + text);
+    text = text.replace('/', '-');
+      request('http://localhost:3001/exame/' + text, function(request, response, body) {
+        let json = JSON.parse(body);
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+    })
+});
+
+//RETORNA DATAS EXAME DISPONIVEIS
+app.post("/r/horarios/exame/datas-disponiveis", (req, res) => {
+    const { text } = req.body;
+
+    console.log("id = " + text);
+    let uri = `http://localhost:3001/r/horarios/exame/datasdisponiveis/${text.hosp}`;
+              
+    // res.send({mensagem : "resposta obtida"})
+    request({url :uri,  method: 'GET'  },function(request, response, body) {
+        let json = JSON.parse(body);
+
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+        console.log(json);
+    })
+});
+
+//RETONR A HORA DISPONIVEL DO EXAME
+
+//RETORNA HORAS POR DATAS DISPONIVEIS
+app.post("/r/horarios/exame/horasdisponiveis", (req, res) => {
+    const { text } = req.body;
+    console.log("id = " + text);
+    let uri = `http://localhost:3001/r/horarios/exame/horasdisponiveis/${text.nCdHospital}/${text.data}`;
+    
+    console.log(uri);
+    request({url :uri,  method: 'GET'  },function(request, response, body) {
+        let json = JSON.parse(body);
+
+        if (json != undefined) {
+            res.send({ mensagem: json });
+        } else {
+            res.send({ mensagem: "erro na query" });
+        }
+        console.log(json);
+    })
+});
+
+app.post("/exame/gravarDados", (req, res) => {
+    let text  = req.body.gravar;
+    console.log("id = " + text);
+    let uri = `http://localhost:3001/exame`;
+    
+    console.log(uri);
+    request({url :uri, method: 'POST', json: true, body :text},function(request, response, body) {
+      /*    let json = JSON.parse(body);
+
+         if (json != undefined) {
+             res.send({ mensagem: json });
+         } else {
+             res.send({ mensagem: "erro na query" });
+         }
+         console.log(json); */
+        res.send({ mensagem: body });
+    })
+});
+
+
+
+
+
 app.listen(port, () => console.log(`Running on port ${port}`));

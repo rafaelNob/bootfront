@@ -2,11 +2,11 @@ const textInput = document.getElementById('textInput');
 const datetimepicker = document.getElementById('datetimepicker');
 const chat = document.getElementById('chat');
 const objScrDiv = document.getElementById("chat-column");
-var datasHabilitadas = []; //['2019-10-20'];
-var allowTimes = []; //['10:00', '12:00', '13:00', '15:00', '17:00', '17:05', '17:20', '19:00', '20:00']
+var datasHabilitadas = []; 
+var allowTimes = [];
 var allowTimesCod = [];
 let objSalvarBanco = {};
-let paramcDecricao = 1; //OK
+let paramcDecricao = 1;
 let context = {};
 let intent = {};
 let intencao;
@@ -44,7 +44,36 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, context, intent }),
   })).json();
+
+  if(response.intents[0] !== undefined ){
+    if(response.intents[0].intent == "agendarExame"){
+      //response.entities[0].value
+      //response.entities[0].entity
+      objSalvar.agendarExame = response.intents[0].intent;
+    
+    }
+    
+  }
+  /**
+   * RETORNO O CODIGO DO EXAME
+   */
+  if(response.intents.length >= 0 && objSalvar.nCdPaciente !== undefined && response.entities[0].entity !== "unidades"){
+    
+    objSalvar.nomeExame = response.entities[0].value;
+    objSalvar.codExame = await retornaExame(objSalvar.nomeExame);
+                          
+  }
+  /**
+   * RETORNA O CODIGO DA UNIDADE
+   */
+  if(response.intents.length >= 0 && objSalvar.nCdPaciente !== undefined && response.entities[0].entity === "unidades"){
+    
   
+    objSalvar.nomeUnidade = response.entities[0].value;
+    objSalvar.nCdHospital = await retornaHospital(objSalvar.nomeUnidade);
+                          
+  }
+ 
   context = response.context; // importante para manter o contexto
   idEspecialidade = response.context.especialidades;
   objSalvar.especialidade = response.context.especialidades;
@@ -60,6 +89,7 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
             mens = 'CPF nao encontrado na base de dados, para os usuários não cadastrados minha única função é tirar dúvidas.';
             context.system.dialog_stack[0].dialog_node = "root";
             response.context.acao = undefined;
+            response.context.cpf  = undefined;
           } else {
             mens = mens.split(' ')
             mens = 'Olá, ' + mens[0] + '!';
@@ -80,6 +110,9 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
     paramCodHospital = objSalvar.nCdHospital;
     console.log('testando o codigo do hospital: ' + paramCodHospital);
   }
+  /**
+   *  RETONA DATAS DISPONÍVEIS
+   */
   if (objSalvar.hospital != undefined && objSalvar.especialidade != undefined  && objSalvar.nCdPaciente != undefined) {
     let objEsp = {espe : objSalvar.nCdEspecialidade, hosp: objSalvar.nCdHospital};
     
@@ -90,6 +123,23 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
     chat.scrollTop = chat.scrollHeight;
     
     await retornaDatasDisponiveis(objEsp);
+  }
+
+  
+
+  /**
+   * RECUPERA DATAS EXAME
+   */
+  if (objSalvar.nCdHospital != undefined && objSalvar.codExame != undefined  && objSalvar.nCdPaciente != undefined) {
+    let objEsp = { hosp: objSalvar.nCdHospital};
+    
+    document.querySelector('#textInput').classList.add('d-none');
+
+    let template =  templateChatMessage('Buscando datas disponiveis...', 'lucca');
+    InsertTemplateInTheChat(template);
+    chat.scrollTop = chat.scrollHeight;
+    
+    await retornaDatasDisponiveisExame(objEsp);
   }
 
   if (autorizaChat)
@@ -104,7 +154,15 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
       InsertTemplateInTheChat(template);
       chat.scrollTop = chat.scrollHeight;
     }
+    if(objSalvar.agendarExame !== undefined){
+      objSalvar.agendarExame;
+    }
 };
+
+/**
+ * LOGICA PARA GRAVAR EXAME
+ */
+
 /**
  * captura entrada de dados do front "Mensagem"
  */
@@ -122,13 +180,6 @@ textInput.addEventListener('keydown', (event) => {
     }''
 });
 
-/* dateInput.addEventListener('change', (event) => {
-    document.getElementById('timepicker').classList.remove('d-none');
-    console.log(event);
-    //select de dados do banco
-    calendario = ["10-19-2019", "10-13-2019", "10-30-2019"]; //dados do banco (mm-dd-yyyy)
-}) */
-
 let procuraCPF = async(text) => {
     const uri = 'http://localhost:3000/paciente/cpf/';
     const response = await (await fetch(uri, {
@@ -138,19 +189,12 @@ let procuraCPF = async(text) => {
     })).json();
 
     if (response.mensagem.message === "nada foi encontrado") {
-      // var template = templateChatMessage('cpf nao encontrado', 'lucca');
-      // InsertTemplateInTheChat(template);
-      // chat.scrollTop = chat.scrollHeight;
       return false;
     } else {
       
 
       objSalvar.nCdPaciente =  response.mensagem.nCdPaciente;
       console.log('parametro id de usuário do cpf: ' + objSalvar.nCdPaciente);
-      
-      // var template = templateChatMessage('cpf encontrado', 'lucca');
-      // InsertTemplateInTheChat(template);
-      // chat.scrollTop = chat.scrollHeight;
       return response.mensagem.cNmPaciente;
     }
 };
@@ -171,9 +215,6 @@ let retornaEspecialidade = async(text) => {
       chat.scrollTop = chat.scrollHeight;
       return false;
     } else {
-      // var template = templateChatMessage('especialidade encontrado', 'lucca');
-      // InsertTemplateInTheChat(template);
-      // chat.scrollTop = chat.scrollHeight;
       return response.mensagem.nCdEspecialidade;
     }
 };
@@ -195,9 +236,6 @@ let retornaHospital = async(text) => {
       } else {
         
         objSalvarBanco.nCdHospital = response.mensagem.nCdHospital;
-        // var template = templateChatMessage('hospital encontrado', 'lucca');
-        // InsertTemplateInTheChat(template);
-        // chat.scrollTop = chat.scrollHeight;
         return response.mensagem.nCdHospital;
       }
   };
@@ -256,54 +294,228 @@ let retornaHospital = async(text) => {
             return response.mensagem.cNmTpConsulta
         }
     };
-console.log(JSON.stringify(objSalvarBanco));
-/*========= CALENDAR JQUERY =========*/
-/* utility functions */
-function nationalDays(date) {
-    var m = date.getMonth(),
-        d = date.getDate(),
-        y = date.getFullYear();
-    //console.log('Checking (raw): ' + m + '-' + d + '-' + y);
-    for (i = 0; i < disabledDays.length; i++) {
-        if ($.inArray((m + 1) + '-' + d + '-' + y, disabledDays) != -1 || new Date() > date) {
-            //console.log('bad:  ' + (m+1) + '-' + d + '-' + y + ' / ' + disabledDays[i]);
-            return [false];
-        }
-    }
-    //console.log('good:  ' + (m+1) + '-' + d + '-' + y);
-    return [true];
-}
-function noWeekendsOrHolidays(date) {
-    var noWeekend = jQuery.datepicker.noWeekends(date);
-    return noWeekend[0] ? nationalDays(date) : noWeekend;
-}
-/*========= FIM CALENDAR JQUERY =========*/
+
 // executando o bot pela primeira vez (para iniciar a conversa)
 getWatsonMessageAndInsertTemplate();
 
-let pegarHorarioIndisponiveis = async(text) => {
-  const uri = 'http://localhost:3000/horarios';
+/**
+ * METODO PARA GRAVAR DADOS DA CONSULTA
+ */
+
+/**
+ * METODOS CONSULTAR EXAMES
+ */
+      let gravarDados = async() => {
+        let gravar ={}
+        let uri ;
+        if(objSalvar.codExame === undefined){
+
+          uri = 'http://localhost:3000/gravarDados';
+           gravar = {
+              "nCdHorario": objSalvar.nCdHorario,
+              "nCdPaciente": objSalvar.nCdPaciente,
+              "nCdEspecialidade":(objSalvar.codExame === undefined)? objSalvar.nCdEspecialidade : objSalvar.codExame
+  
+              
+              
+          }
+
+        }else{
+           uri = 'http://localhost:3000/exame/gravarDados';
+           gravar = {
+              "nCdHorario": objSalvar.nCdHorario,
+              "nCdPaciente": objSalvar.nCdPaciente,
+              "nCdExame":(objSalvar.codExame === undefined)? objSalvar.nCdEspecialidade : objSalvar.codExame
+  
+              
+              
+          }
+
+
+        }
+
+        const response = await (await fetch(uri, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gravar }),
+        })).json();
+      //nCdExame
+        objSalvar.ncdConsulta =  (objSalvar.codExame === undefined)? response.mensagem[0].nCdConsulta :response.mensagem[0].nCdExame;
+       /*  objSalvar.ncdConsulta = response.mensagem[0].nCdConsulta; */
+        let mens = ` ${(objSalvar.codExame === undefined)? 'sua CONSULTA' : 'seu EXAME'} foi agendada com sucesso! Seu protocolo é: ${(objSalvar.codExame === undefined)? 'CONS-':'EXM-' } ${objSalvar.ncdConsulta}.`;
+        let template = templateChatMessage(mens, 'lucca');
+        InsertTemplateInTheChat(template);
+
+        /* document.querySelector('#div_data').classList.remove('d-none');
+        document.querySelector('#textInput').classList.add('d-none'); */
+
+        textInput.value = '';
+        chat.scrollTop = chat.scrollHeight;
+        context.system.dialog_stack[0].dialog_node = "root";
+        
+       // response.context.cpf  = undefined;
+      
+        if (response.mensagem.message === "nada foi encontrado") {
+          return false;
+        } 
+      };
+
+      /**
+       * SELECIONA HORARIO DISPONÍVEL
+       */
+      let selecionaHorario = () => {
+        let template = templateChatMessage(`${datetimepicker.value}`, 'user');
+        InsertTemplateInTheChat(template);
+      
+        let dados = datetimepicker.value.split(' ');
+        
+        let mens = `Confirmado, agendando ${(objSalvar.codExame === undefined)? 'sua CONSULTA' :'SEU EXAME'} para o dia ${dados[0]} às ${dados[1]} no ${objSalvar.hospital}.`;
+        template = templateChatMessage(mens, 'lucca');
+        InsertTemplateInTheChat(template);
+      
+        let timer = setInterval(temporizador, 5000);
+        function temporizador() {
+          gravarDados();
+          clearInterval(timer);
+        }
+      
+        document.querySelector('#div_data').classList.add('d-none');
+        document.querySelector('#textInput').classList.remove('d-none');
+      
+        textInput.value = '';
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      let changeDateTimePicker = () => {
+        console.log('datetimepicker.value: ' + datetimepicker.value);
+        let dados = datetimepicker.value.split(' ');
+        //retorna horarios ao mudar dia
+        
+        if(objSalvar.ultimaData!==dados[0]){
+          let aux = dados[0].split('/');
+          objSalvar.ultimaData = dados[0];
+          objSalvar.data = aux[2]+aux[1]+aux[0];
+          if( objSalvar.codExame === undefined){
+            retornaHorasDisponiveis(objSalvar);
+
+          }else{
+            retornaHorasDisponiveisExame(objSalvar);
+          }
+        }
+        //"grava" horario
+        else if(objSalvar.ultimaHora !== dados[1]){
+          if(!allowTimes.includes(dados[1])){ delete objSalvar.horario; return false; }
+          objSalvar.ultimaHora = dados[1];
+          objSalvar.dHoraInicial = datetimepicker.value;
+          objSalvar.nCdHorario = allowTimesCod[allowTimes.indexOf(dados[1])];
+          document.querySelector('#div_data button').removeAttribute("disabled");
+          console.log('objSalvar');
+        }
+      }
+      let retornaDatasDisponiveis = async(text) => {
+        const uri = 'http://localhost:3000/r/horarios/datas-disponiveis';
+      
+        const response = await (await fetch(uri, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+        })).json();
+      
+        document.querySelector('#div_data').classList.remove('d-none');
+        if (response.mensagem.message === "nada foi encontrado") {
+          let template =  templateChatMessage('Não encontramos datas', 'lucca');
+          InsertTemplateInTheChat(template);
+          chat.scrollTop = chat.scrollHeight;
+          return false;
+        }
+        else {
+          for (let index = 0; index < response.mensagem.length; index++) {
+            let aux = response.mensagem[index].DATA.split('/');
+            aux[3] = aux[2] +'/'+ aux[1] +'/'+ aux[0];
+            datasHabilitadas[index] = aux[3];
+          }
+          
+          apresentaDatePicker(datasHabilitadas);
+          document.querySelector('.xdsoft_datetimepicker').style.width = "auto";
+          
+          let aux = datasHabilitadas[0].split('/');
+          datetimepicker.value = aux[2]+'/'+aux[1]+'/'+aux[0];
+          changeDateTimePicker(); 
+        }
+      };
+      
+      let retornaHorasDisponiveis = async(text) => {
+        const uri = 'http://localhost:3000/r/horarios/horasdisponiveis';
+      
+        const response = await (await fetch(uri, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+        })).json();
+      
+        if (response.mensagem.message === "nada foi encontrado") {
+          return false;
+        } else {
+          allowTimes=[];
+          allowTimesCod=[];
+          for (let index = 0; index < response.mensagem.length; index++) {
+            allowTimes[index] = response.mensagem[index].HORA_INICIAL.replace(/(?<=\d+:\d+):\d+/, '');
+            allowTimesCod[index] = response.mensagem[index].nCdHorario;
+          }
+          apresentaDatePicker(datasHabilitadas, allowTimes);
+        }
+      };
+      /**
+       * CONSULTA HORARIOS INDISPONÍVEIS
+       * @param {*} text 
+       */
+      let pegarHorarioIndisponiveis = async(text) => {
+        const uri = 'http://localhost:3000/horarios';
+      
+        const response = await (await fetch(uri, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+        })).json();
+        var data = []
+        var dataIndiposniveis = []
+        for (let i = 0; i < response.mensagem.length; i++) {
+            data[i] = response.mensagem[i].dHoraInicial.substring(0, 10);
+            var ano = data[i].slice(0, 4);
+            var mes = data[i].slice(5, 7);
+            var dia = data[i].slice(8, 10);
+            dataIndiposniveis[i] = ano + "/" + mes + "/" + dia;
+        }
+         disabe = dataIndiposniveis;
+      };
+
+      //FIM METODOS CONSULTA
+ /**
+  * 
+ * METODOS PARA EXAME
+ */
+let retornaExame = async(text) => {
+  const uri = 'http://localhost:3000/exame/';
 
   const response = await (await fetch(uri, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
   })).json();
-  var data = []
-  var dataIndiposniveis = []
-  for (let i = 0; i < response.mensagem.length; i++) {
-      data[i] = response.mensagem[i].dHoraInicial.substring(0, 10);
-      var ano = data[i].slice(0, 4);
-      var mes = data[i].slice(5, 7);
-      var dia = data[i].slice(8, 10);
-      dataIndiposniveis[i] = ano + "/" + mes + "/" + dia;
+
+
+  if (response.mensagem === undefined) {
+    var template = templateChatMessage('exame nao encontrado', 'lucca');
+    InsertTemplateInTheChat(template);
+    chat.scrollTop = chat.scrollHeight;
+    return false;
+  } else {
+    return response.mensagem.nCdTpExame;
   }
-   disabe = dataIndiposniveis;
 };
 
-//RETORNA DATA
-let retornaDatasDisponiveis = async(text) => {
-  const uri = 'http://localhost:3000/r/horarios/datas-disponiveis';
+let retornaDatasDisponiveisExame = async(text) => {
+  const uri = 'http://localhost:3000/r/horarios/exame/datas-disponiveis';
 
   const response = await (await fetch(uri, {
       method: 'POST',
@@ -334,8 +546,10 @@ let retornaDatasDisponiveis = async(text) => {
   }
 };
 
-let retornaHorasDisponiveis = async(text) => {
-  const uri = 'http://localhost:3000/r/horarios/horasdisponiveis';
+//retorna horas
+
+let retornaHorasDisponiveisExame = async(text) => {
+  const uri = 'http://localhost:3000/r/horarios/exame/horasdisponiveis';
 
   const response = await (await fetch(uri, {
       method: 'POST',
@@ -354,74 +568,4 @@ let retornaHorasDisponiveis = async(text) => {
     }
     apresentaDatePicker(datasHabilitadas, allowTimes);
   }
-};
-
-let changeDateTimePicker = () => {
-  console.log('datetimepicker.value: ' + datetimepicker.value);
-  let dados = datetimepicker.value.split(' ');
-  //retorna horarios ao mudar dia
-  if(objSalvar.ultimaData!==dados[0]){
-    let aux = dados[0].split('/');
-    objSalvar.ultimaData = dados[0];
-    objSalvar.data = aux[2]+aux[1]+aux[0];
-    retornaHorasDisponiveis(objSalvar);
-  }
-  //"grava" horario
-  else if(objSalvar.ultimaHora !== dados[1]){
-    if(!allowTimes.includes(dados[1])){ delete objSalvar.horario; return false; }
-    objSalvar.ultimaHora = dados[1];
-    objSalvar.dHoraInicial = datetimepicker.value;
-    objSalvar.nCdHorario = allowTimesCod[allowTimes.indexOf(dados[1])];
-    document.querySelector('#div_data button').removeAttribute("disabled");
-    console.log('objSalvar');
-  }
-}
-
-let selecionaHorario = () => {
-  let template = templateChatMessage(`${datetimepicker.value}`, 'user');
-  InsertTemplateInTheChat(template);
-
-  let dados = datetimepicker.value.split(' ');
-  let mens = `Confirmado, agendando sua consulta para o dia ${dados[0]} às ${dados[1]} no ${objSalvar.hospital}.`;
-  template = templateChatMessage(mens, 'lucca');
-  InsertTemplateInTheChat(template);
-
-  let timer = setInterval(temporizador, 5000);
-  function temporizador() {
-    gravarDados();
-    clearInterval(timer);
-  }
-
-  document.querySelector('#div_data').classList.add('d-none');
-  document.querySelector('#textInput').classList.remove('d-none');
-
-  textInput.value = '';
-  chat.scrollTop = chat.scrollHeight;
-}
-
-///GRAVAR NO BANCO ALELUA AMÉM
-let gravarDados = async() => {
-  const uri = 'http://localhost:3000/gravarDados';
-  //74819
-  let teste = {
-      "nCdHorario": objSalvar.nCdHorario,
-      "nCdPaciente": objSalvar.nCdPaciente,
-      "nCdEspecialidade": objSalvar.nCdEspecialidade
-  }
-
-  const response = await (await fetch(uri, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teste }),
-  })).json();
-
-  objSalvar.ncdConsulta = response.mensagem[0].nCdConsulta;
-  let mens = `Sua consulta foi agendada com sucesso! Seu protocolo é: CONS-${objSalvar.ncdConsulta}.`;
-  let template = templateChatMessage(mens, 'lucca');
-  InsertTemplateInTheChat(template);
-  chat.scrollTop = chat.scrollHeight;
-
-  if (response.mensagem.message === "nada foi encontrado") {
-    return false;
-  } 
 };
