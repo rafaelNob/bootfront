@@ -37,6 +37,7 @@ const InsertTemplateInTheChat = (template) => {
  * //chama a transação do watson inciado com text vazio
  * @param {*} text recebe a mesagem do frot
  */
+let watsonResp;
 const getWatsonMessageAndInsertTemplate = async(text = '') => {
   const uri = 'http://localhost:3000/conversation/';
   const response = await (await fetch(uri, {
@@ -51,27 +52,31 @@ const getWatsonMessageAndInsertTemplate = async(text = '') => {
       //response.entities[0].entity
       objSalvar.agendarExame = response.intents[0].intent;
     
+    }else if(response.intents[0].intent == "agendarConsulta"){
+      //response.entities[0].value
+      //response.entities[0].entity
+      objSalvar.agendarConsulta = response.intents[0].intent;
+    
     }
     
   }
   /**
    * RETORNO O CODIGO DO EXAME
    */
-  if(response.intents.length >= 0 && objSalvar.nCdPaciente !== undefined && response.entities[0].entity !== "unidades"){
-    
-    objSalvar.nomeExame = response.entities[0].value;
-    objSalvar.codExame = await retornaExame(objSalvar.nomeExame);
-                          
-  }
+ 
+  if(response.intents.length >= 0 && objSalvar.nCdPaciente !== undefined &&   objSalvar.agendarExame === "agendarExame" 
+      && response.entities[0] != undefined){
+    if(response.entities[0].entity === "tipo_exames"){
+      objSalvar.nomeExame = response.entities[0].value;
+      objSalvar.codExame = await retornaExame(objSalvar.nomeExame);                        
+    }
   /**
    * RETORNA O CODIGO DA UNIDADE
    */
-  if(response.intents.length >= 0 && objSalvar.nCdPaciente !== undefined && response.entities[0].entity === "unidades"){
-    
-  
-    objSalvar.nomeUnidade = response.entities[0].value;
-    objSalvar.nCdHospital = await retornaHospital(objSalvar.nomeUnidade);
-                          
+    if(response.entities[0].entity === "unidades"){  
+      objSalvar.nomeUnidade = response.entities[0].value;
+      objSalvar.nCdHospital = await retornaHospital(objSalvar.nomeUnidade);
+    }                      
   }
  
   context = response.context; // importante para manter o contexto
@@ -334,13 +339,13 @@ getWatsonMessageAndInsertTemplate();
 
         }
 
-        const response = await (await fetch(uri, {
+        const resposta = await (await fetch(uri, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gravar }),
         })).json();
       //nCdExame
-        objSalvar.ncdConsulta =  (objSalvar.codExame === undefined)? response.mensagem[0].nCdConsulta :response.mensagem[0].nCdExame;
+        objSalvar.ncdConsulta =  (objSalvar.codExame === undefined)? resposta.mensagem[0].nCdConsulta :resposta.mensagem[0].nCdExame;
        /*  objSalvar.ncdConsulta = response.mensagem[0].nCdConsulta; */
         let mens = ` ${(objSalvar.codExame === undefined)? 'sua CONSULTA' : 'seu EXAME'} foi agendada com sucesso! Seu protocolo é: ${(objSalvar.codExame === undefined)? 'CONS-':'EXM-' } ${objSalvar.ncdConsulta}.`;
         let template = templateChatMessage(mens, 'lucca');
@@ -353,9 +358,28 @@ getWatsonMessageAndInsertTemplate();
         chat.scrollTop = chat.scrollHeight;
         context.system.dialog_stack[0].dialog_node = "root";
         
-       // response.context.cpf  = undefined;
-      
-        if (response.mensagem.message === "nada foi encontrado") {
+          if(objSalvar.codExame === undefined){
+            context.cpf  = undefined;
+            context.unidades = undefined;
+            context.especialidades = undefined;
+            context.objSalvar = undefined;
+            context.contextintent = undefined;
+            context.entities = undefined;
+            
+            
+          }else{
+            context.cpf  = undefined;
+            context.tipo_exames = undefined;
+            context.unidades = undefined;
+            objSalvar = undefined;
+            context.intent = undefined;
+            context.entities = undefined;
+
+
+          }
+          template = templateChatMessage("Posso ajudar em mais alguma coisa?", 'lucca');
+          InsertTemplateInTheChat(template);
+        if (resposta.mensagem.message === "nada foi encontrado") {
           return false;
         } 
       };
@@ -383,6 +407,9 @@ getWatsonMessageAndInsertTemplate();
         document.querySelector('#textInput').classList.remove('d-none');
       
         textInput.value = '';
+
+        
+      
         chat.scrollTop = chat.scrollHeight;
       }
 
@@ -496,12 +523,15 @@ getWatsonMessageAndInsertTemplate();
  */
 let retornaExame = async(text) => {
   const uri = 'http://localhost:3000/exame/';
+  
 
-  const response = await (await fetch(uri, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-  })).json();
+    const response = await (await fetch(uri, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+    })).json();
+ 
+  
 
 
   if (response.mensagem === undefined) {
